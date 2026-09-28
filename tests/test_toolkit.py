@@ -16,32 +16,32 @@ CLI_ENV["PYTHONPATH"] = os.path.abspath(
 
 
 def test_calc_mandatory_addition_and_multiplication() -> None:
-    """Проверка приоритета операций из чек-листа."""
+    """Проверка приоритета операций."""
     assert calculate("2+3*4") == 14.0
 
 
 def test_calc_mandatory_division() -> None:
-    """Проверка вещественного деления из чек-листа."""
+    """Проверка вещественного деления."""
     assert calculate("10 / 4") == 2.5
 
 
 def test_calc_mandatory_unary_multiplication() -> None:
-    """Проверка умножения отрицательных чисел из чек-листа."""
+    """Проверка умножения отрицательных чисел."""
     assert calculate("-2 * -3") == 6.0
 
 
 def test_calc_mandatory_unary_addition() -> None:
-    """Проверка сложения с унарным минусом из чек-листа."""
+    """Проверка сложения с унарным минусом."""
     assert calculate("1+-2") == -1.0
 
 
 def test_calc_extra_subtraction() -> None:
-    """Дополнительная проверка базового вычитания."""
+    """Проверка базового вычитания."""
     assert calculate("100 - 45") == 55.0
 
 
 def test_calc_extra_basic_division() -> None:
-    """Дополнительная проверка деления нацело в float."""
+    """Проверка деления нацело в float."""
     assert calculate("25 / 5") == 5.0
 
 
@@ -123,7 +123,7 @@ def test_convert_incompatible_groups() -> None:
 
 def test_convert_unknown_unit() -> None:
     """Негативный тест: абсолютно неизвестная единица измерения."""
-    with pytest.raises(ToolkitError, match="неизвестн"):
+    with pytest.raises(ToolkitError, match="неизвестная единица"):
         convert("50", "abc", "m")
 
 
