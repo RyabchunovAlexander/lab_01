@@ -2,66 +2,53 @@ from toolkit.errors import ToolkitError
 
 
 def tokenize(expression: str) -> list:
-    """Шаг 1. Разбивает строку на числа (float) и операторы.
-
-    Алгоритм полностью игнорирует пробелы между токенами и выбрасывает
-    ToolkitError, если встречает недопустимые символы (например, буквы).
-    """
-    # Проверяем обязательное требование: пустое выражение или только пробелы
+    """Разбивает строку на числа (float) и операторы, игнорируя пробелы."""
     if not expression.strip():
-        raise ToolkitError("Empty expression")
+        raise ToolkitError("пустое выражение")
 
     tokens = []
-    current_number = ""  # Временный буфер, куда мы посимвольно копим число
+    current_number = ""
 
     i = 0
     while i < len(expression):
         char = expression[i]
 
-        # Если символ — пробел, просто пропускаем его согласно критериям
         if char.isspace():
             i += 1
             continue
 
-        # Если символ — цифра или точка, добавляем её в буфер числа
         if char.isdigit() or char == ".":
             current_number += char
         else:
-            # Если мы дошли до оператора, но в буфере скопилось число —
-            # сначала переводим его во float и сохраняем в итоговый список
             if current_number:
                 try:
                     tokens.append(float(current_number))
                 except ValueError:
-                    raise ToolkitError("Invalid numeric value")
-                current_number = ""  # Очищаем буфер для следующего числа
+                    raise ToolkitError("неверное числовое значение")
+                current_number = ""
 
-            # Проверяем, является ли символ допустимым бинарным оператором
             if char in ("+", "-", "*", "/"):
                 tokens.append(char)
             else:
-                # Обязательная проверка на недопустимый символ (например, "2+a")
-                raise ToolkitError(f"Invalid character: '{char}'")
+                raise ToolkitError("недопустимый символ")
         i += 1
 
-    # Если строка закончилась, но в буфере осталось последнее число — добавляем его
     if current_number:
         try:
             tokens.append(float(current_number))
         except ValueError:
-            raise ToolkitError("Invalid numeric value")
+            raise ToolkitError("неверное числовое значение")
 
     return tokens
 
 
-def validate_and_process_unaries(tokens: list) -> list:
-    """Шаг 2. Валидирует токены и обрабатывает унарные знаки.
-
-    Склеивает унарные '+' и '-' с числами. Выбрасывает ToolkitError, если
-    обнаруживает синтаксические ошибки (например, два бинарных оператора подряд).
-    """
+def validate(tokens: list) -> list:
+    """Проверяет синтаксические ошибки и обрабатывает унарные знаки."""
     if not tokens:
-        raise ToolkitError("Empty expression")
+        raise ToolkitError("пустое выражение")
+
+    if tokens[0] in ("*", "/"):
+        raise ToolkitError("пропущенный операнд")
 
     processed_tokens = []
     i = 0
@@ -70,97 +57,76 @@ def validate_and_process_unaries(tokens: list) -> list:
     while i < n:
         token = tokens[i]
 
-        # Как алгоритм понимает, что знак унарный?
-        # Знак унарный, если он стоит в самом начале (i == 0)
-        # ИЛИ если он стоит сразу после другого оператора (последний элемент в processed_tokens — строка)
+        # Проверка на унарный знак перед числом
         if token in ("+", "-") and (i == 0 or isinstance(processed_tokens[-1], str)):
-            # Ошибка: унарный знак стоит в самом конце выражения (например, "2 + -")
             if i + 1 >= n:
-                raise ToolkitError("Missing operand")
+                raise ToolkitError("пропущенный операнд")
 
             next_token = tokens[i + 1]
 
-            # Если за унарным знаком идет число — склеиваем их в одно отрицательное/положительное число
             if isinstance(next_token, float):
                 value = next_token if token == "+" else -next_token
                 processed_tokens.append(value)
-                i += 2  # Перешагиваем через обработанное число
+                i += 2
                 continue
             else:
-                # Ошибка: два бинарных оператора подряд (например, "2 * - + 3")
-                raise ToolkitError("Two binary operators in a row")
+                raise ToolkitError("два бинарных оператора подряд")
 
-        # Обязательная проверка на два бинарных оператора подряд (например, "2 * / 3")
+        # Проверка на два бинарных оператора подряд
         if isinstance(token, str) and i > 0 and isinstance(processed_tokens[-1], str):
-            raise ToolkitError("Two binary operators in a row")
+            raise ToolkitError("два бинарных оператора подряд")
 
         processed_tokens.append(token)
         i += 1
 
-    # Проверка: выражение не может заканчиваться оператором (например, "2 +")
     if processed_tokens and isinstance(processed_tokens[-1], str):
-        raise ToolkitError("Missing operand")
+        raise ToolkitError("пропущенный операнд")
 
     return processed_tokens
 
 
-def _execute_ops(tokens: list, target_operators: tuple) -> list:
-    """Вспомогательная функция для прохода по токенам и выполнения операций.
+def calculate(expression: str) -> float:
+    """Вычисляет результат выражения в два прохода по приоритетам операторов."""
+    raw_tokens = tokenize(expression)
+    tokens = validate(raw_tokens)
 
-    Выполняет бинарные операции из переданного кортежа target_operators
-    строго слева направо.
-    """
+    # Проход А: Выполняем приоритетные операции (*, /) слева направо
     i = 0
     while i < len(tokens):
-        if tokens[i] in target_operators:
+        if tokens[i] in ("*", "/"):
             op = tokens[i]
             left_operand = tokens[i - 1]
             right_operand = tokens[i + 1]
 
-            # Выполняем базовые математические действия
             if op == "*":
                 result = left_operand * right_operand
             elif op == "/":
-                # Обязательное требование преподавателя: обработка деления на ноль
                 if right_operand == 0:
-                    raise ToolkitError("Division by zero")
+                    raise ToolkitError("деление на ноль")
                 result = left_operand / right_operand
-            elif op == "+":
+
+            tokens[i - 1 : i + 2] = [result]
+            continue
+        i += 1
+
+    # Проход Б: Выполняем оставшиеся операции (+, -) слева направо
+    i = 0
+    while i < len(tokens):
+        if tokens[i] in ("+", "-"):
+            op = tokens[i]
+            left_operand = tokens[i - 1]
+            right_operand = tokens[i + 1]
+
+            if op == "+":
                 result = left_operand + right_operand
             elif op == "-":
                 result = left_operand - right_operand
 
-            # Схлопываем список: заменяем три элемента (число, знак, число) на результат
             tokens[i - 1 : i + 2] = [result]
-            # Индекс i не увеличиваем, так как длина списка уменьшилась
             continue
         i += 1
-    return tokens
 
+    if len(tokens) != 1 or isinstance(tokens[0], str):
+        raise ToolkitError("неверное числовое значение")
 
-def calculate(expression: str):
-    """Главная функция вычислительного ядра калькулятора.
-
-    Связывает воедино токенизацию, валидацию и расчет по приоритетам.
-    """
-    # Фаза 1. Токенизация (разбиение строки на числа и знаки)
-    raw_tokens = tokenize(expression)
-
-    # Фаза 2. Валидация и обработка унарных знаков
-    clean_tokens = validate_and_process_unaries(raw_tokens)
-
-    # Фаза 3. Вычисление: сначала Проход А (умножение и деление как приоритетные)
-    clean_tokens = _execute_ops(clean_tokens, ("*", "/"))
-
-    # Фаза 3. Вычисление: Проход Б (оставшиеся сложение и вычитание)
-    clean_tokens = _execute_ops(clean_tokens, ("+", "-"))
-
-    # Валидация структуры: в конце в списке должен остаться ровно один элемент
-    if len(clean_tokens) != 1 or isinstance(clean_tokens[0], str):
-        raise ToolkitError("Invalid expression structure")
-
-    result = clean_tokens[0]
-
-    # Если результат вещественный, но число целое (например, 5.0) —
-    # приводим к int для красивого вывода, иначе возвращаем float
-    return int(result) if result.is_integer() else result
+    return float(tokens[0])

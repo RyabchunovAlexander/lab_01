@@ -18,23 +18,18 @@ def main() -> None:
     )
 
     # Добавляем подпарсеры для разделения команд 'calc' и 'convert'
-    # dest="command" запишет имя вызванной команды (calc или convert) в переменную
     commands = parser.add_subparsers(dest="command", required=True)
 
-    # --- Настройка команды 'calc' ---
+    # Настройка команды 'calc'
     calc_parser = commands.add_parser("calc", help="Вычислить математическое выражение")
-    # Добавляем обязательный позиционный аргумент для строки выражения
     calc_parser.add_argument("expression", help="Математическое выражение в кавычках")
 
-    # --- Настройка команды 'convert' ---
+    # Настройка команды 'convert'
     convert_parser = commands.add_parser("convert", help="Конвертировать величины")
-    # Добавляем позиционный аргумент для значения (передается как строка для ядра)
     convert_parser.add_argument("value", help="Числовое значение для конвертации")
-    # Добавляем обязательный именованный флаг --from
     convert_parser.add_argument(
         "--from", dest="from_unit", required=True, help="Исходная единица измерения"
     )
-    # Добавляем обязательный именованный флаг --to
     convert_parser.add_argument(
         "--to", dest="to_unit", required=True, help="Целевая единица измерения"
     )
@@ -45,15 +40,11 @@ def main() -> None:
     try:
         # Маршрутизация: смотрим, какая команда была вызвана пользователем
         if args.command == "calc":
-            # Передаем строку выражения в ядро калькулятора
             result = calculate(args.expression)
-            # Выводим успешный результат в стандартный stdout
             print(result)
 
         elif args.command == "convert":
-            # Передаем параметры в ядро конвертера величин
             result = convert(args.value, args.from_unit, args.to_unit)
-            # Выводим успешный результат в стандартный stdout
             print(result)
 
     except ToolkitError as e:

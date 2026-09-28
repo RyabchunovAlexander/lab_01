@@ -15,8 +15,7 @@ def get_unit_group(unit: str) -> str:
         return "mass"
     if unit in ("c", "f", "k"):
         return "temperature"
-    # Ошибка: неизвестная единица измерения
-    raise ToolkitError(f"Unknown unit: '{unit}'")
+    raise ToolkitError("неизвестная единица")
 
 
 def to_kelvin(value: float, unit: str) -> float:
@@ -40,7 +39,7 @@ def convert_temperature(value: float, from_unit: str, to_unit: str) -> float:
         celsius = value
     elif from_unit == "k":
         celsius = value - 273.15
-    else:  # f
+    else:
         celsius = (value - 32) * 5 / 9
 
     # 2. Из Цельсия переводим в целевую шкалу
@@ -48,7 +47,7 @@ def convert_temperature(value: float, from_unit: str, to_unit: str) -> float:
         return celsius
     elif to_unit == "k":
         return celsius + 273.15
-    else:  # f
+    else:
         return celsius * 9 / 5 + 32
 
 
@@ -61,7 +60,7 @@ def convert(value_str: str, from_unit: str, to_unit: str) -> float:
     try:
         value = float(value_str)
     except ValueError:
-        raise ToolkitError("Invalid numeric value")
+        raise ToolkitError("неверное числовое значение")
 
     # 2. Приводим строки к нижнему регистру согласно правилу инвариантности к регистру
     from_unit = from_unit.lower()
@@ -73,15 +72,13 @@ def convert(value_str: str, from_unit: str, to_unit: str) -> float:
 
     # 4. Валидация: запрещаем перевод между несовместимыми группами (например, kg в m)
     if group_from != group_to:
-        raise ToolkitError(
-            f"Incompatible units: cannot convert {group_from} to {group_to}"
-        )
+        raise ToolkitError("несовместимые единицы")
 
     # 5. Вычисление
     if group_from == "temperature":
         # Проверка обязательного ограничения: температура ниже абсолютного нуля запрещена
         if to_kelvin(value, from_unit) < 0:
-            raise ToolkitError("Temperature below absolute zero is forbidden")
+            raise ToolkitError("температура ниже абсолютного нуля")
         return float(convert_temperature(value, from_unit, to_unit))
     else:
         # Для длины и массы делаем перевод через эталон (инвариант)
