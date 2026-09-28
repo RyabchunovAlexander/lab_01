@@ -11,13 +11,13 @@ def main() -> None:
     Разбирает аргументы командной строки, вызывает соответствующие ядра
     вычислений и централизованно обрабатывает возникающие ошибки.
     """
-    # Создаем главный парсер аргументов командной строки
+    # Настраиваем главный парсер командной строки
     parser = argparse.ArgumentParser(
         prog="python -m toolkit",
         description="Toolkit CLI Utilities: калькулятор выражений и конвертер величин.",
     )
 
-    # Добавляем подпарсеры для разделения команд 'calc' и 'convert'
+    # Создаем блок для команд 'calc' и 'convert'
     commands = parser.add_subparsers(dest="command", required=True)
 
     # Настройка команды 'calc'
@@ -34,11 +34,11 @@ def main() -> None:
         "--to", dest="to_unit", required=True, help="Целевая единица измерения"
     )
 
-    # Запускаем разбор аргументов, переданных из терминала
+    # Считываем аргументы из терминала
     args = parser.parse_args()
 
     try:
-        # Маршрутизация: смотрим, какая команда была вызвана пользователем
+        # Проверяем, что ввел пользователь
         if args.command == "calc":
             result = calculate(args.expression)
             print(result)
@@ -48,8 +48,7 @@ def main() -> None:
             print(result)
 
     except ToolkitError as e:
-        # Если ядро выбросило наше контролируемое исключение — передаем его текст
-        # в обработчик ошибок, который выведет его в stderr и вернет код 2.
+        # Отправляем ошибку в stderr и выходим с кодом 2
         handle_error(str(e))
 
 

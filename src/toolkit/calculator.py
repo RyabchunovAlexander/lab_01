@@ -48,7 +48,7 @@ def validate(tokens: list) -> list:
         raise ToolkitError("пустое выражение")
 
     if tokens[0] in ("*", "/"):
-        raise ToolkitError("пропущенный операнд")
+        raise ToolkitError("недопустимый символ")
 
     processed_tokens = []
     i = 0
